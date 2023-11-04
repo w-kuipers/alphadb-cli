@@ -13,11 +13,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-
-from colorama import Fore
 import inquirer
 from typing import TypedDict
 import sys
+from src.utils.common import console
 
 #### Type hinting
 class MySQLCredentials(TypedDict):
@@ -37,12 +36,12 @@ def check_port(val):
 
 "Prompt user to input credentials"
 def get_mysql_creds() -> MySQLCredentials:
-    print("Connecting to a MySQL database requires you to provide log-in credentials\n")
-    print(Fore.CYAN + "Host:", "URL/IP (Default localhost)")
-    print(Fore.CYAN + "User:", "User with permissions to alter the database")
-    print(Fore.CYAN + "Password:", "The users password")
-    print(Fore.CYAN + "Database:", "The name of the database to connect to")
-    print(Fore.CYAN + "Port:", "(Default 3306)\n\n")
+    console.print("[cyan]Connecting to a MySQL database requires you to provide log-in credentials[/cyan]\n")
+    console.print("[cyan]Host:[/cyan]", "URL/IP (Default localhost)")
+    console.print("[cyan]User:[/cyan]", "User with permissions to alter the database")
+    console.print("[cyan]Password:[/cyan]", "The users password")
+    console.print("[cyan]Database:[/cyan]", "The name of the database to connect to")
+    console.print("[cyan]Port:[/cyan]", "(Default 3306)\n\n")
 
     questions = [
         inquirer.Text("host", message="Host (localhost)"),
