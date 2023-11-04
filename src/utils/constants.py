@@ -13,4 +13,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-CONFIG_PATH = "config.ini"
+from sys import platform
+import os
+from pathlib import Path
+
+if platform == "linux" or platform == "linux2":
+    config_dir = os.path.join(str(Path.home()), ".config/alphadb/")
+    if not os.path.exists(config_dir): os.mkdir(config_dir)
+    CONFIG_PATH = os.path.join(config_dir, "cli-config.ini")
+else:
+    CONFIG_PATH = "config.ini"
+
