@@ -15,6 +15,7 @@
 
 from src.utils.common import print_title
 from src.utils.connect.mysql import get_mysql_creds
+from src.utils.connect.sqlite import get_sqlite_file
 from alphadb import AlphaDBMySQL
 from alphadb.utils.exceptions import DBTemplateNoMatch, IncompleteVersionData, MissingVersionData, DBConfigIncomplete
 from mysql.connector import DatabaseError, InterfaceError
@@ -35,40 +36,63 @@ db = AlphaDBMySQL()
 def connect():
 
     print_title("connect")
-    creds = get_mysql_creds()
+    
+    #### Prompt user for database engine
+    questions = [List("engine", choices=["MySQL", "SQLite"])]
+    answers = prompt(questions)
+    
+    #### If answers is None, user likely aborted
+    if answers == None: return
 
-    try:
-        db.connect(
-            host=creds["host"],
-            user=creds["user"],
-            password=creds["password"],
-            database=creds["database"],
-            port=creds["port"],
-        )
+    #### clear terminal and rerender title
+    clear()
+    print_title("connect")
 
-    #### Print mysql error if raised
-    except (DatabaseError, InterfaceError) as e:
-        if hasattr(e, "msg"): console.print(f"\n[red]{e.msg}[/red]\n")
-        else: console.print(f"\n[red]{e}[/red]\n")
-        return
+    engine = answers["engine"]
 
-    ### If connection was successful, add the credentials to config
-    pass_bytes = creds["password"].encode()
-    f = Fernet(config_get("CONFIG", "secret"))
-    pass_encrypted = f.encrypt(pass_bytes)
+    if engine == "MySQL":
+        creds = get_mysql_creds()
 
-    #### Save credentials to config
-    config_write({
-        "DB_SESSION": {
-            "host": creds["host"],
-            "user": creds["user"],
-            "password": pass_encrypted,
-            "database": creds["database"],
-            "port": creds["port"],
-        }
-    })
+        try:
+            db.connect(
+                host=creds["host"],
+                user=creds["user"],
+                password=creds["password"],
+                database=creds["database"],
+                port=creds["port"],
+            )
 
-    console.print(f'\n[green]Successfully connected to database:[/green] [cyan]"{creds["database"]}"[/cyan]\n')
+        #### Print mysql error if raised
+        except (DatabaseError, InterfaceError) as e:
+            if hasattr(e, "msg"): console.print(f"\n[red]{e.msg}[/red]\n")
+            else: console.print(f"\n[red]{e}[/red]\n")
+            return
+
+        ### If connection was successful, add the credentials to config
+        pass_bytes = creds["password"].encode()
+        f = Fernet(config_get("CONFIG", "secret"))
+        pass_encrypted = f.encrypt(pass_bytes)
+
+        #### Save credentials to config
+        config_write({
+            "DB_SESSION": {
+                "host": creds["host"],
+                "user": creds["user"],
+                "password": pass_encrypted,
+                "database": creds["database"],
+                "port": creds["port"],
+            }
+        })
+
+        console.print(f'\n[green]Successfully connected to database:[/green] [cyan]"{creds["database"]}"[/cyan]\n')
+
+    elif engine == "SQLite":
+        db_file = get_sqlite_file()
+
+        #### If db_file is None, user likely aborted
+        if db_file == None: return
+
+        print(db_file)
 
     return
 

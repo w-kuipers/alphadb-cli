@@ -18,7 +18,7 @@ from src.utils.decorators import config_check
 from src.utils.common import console, clear
 
 #### Initialize some stuff
-DEV = False
+DEV = True
 
 def raise_error(e):
     if DEV: raise e
