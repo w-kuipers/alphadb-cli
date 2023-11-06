@@ -20,7 +20,7 @@ console = Console()
 
 "Prints out the programs title"
 def print_title(title:str):
-    console.print(f"[cyan]----- {title.upper()} -----[/cyan]\n")
+    console.print(f"[green]----- [white]{title.upper()}[/white] -----[/green]\n")
 
 "Clear the terminal"
 def clear():
