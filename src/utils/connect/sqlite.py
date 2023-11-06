@@ -20,6 +20,10 @@ from sqlite3 import connect
 
 def validate_db_path(_, path):
     
+    #### Check if path is absolute
+    if not os.path.isabs(path):
+        raise ValidationError("", reason="Supplies path is not absolute!")
+
     #### Check if path exists
     if not os.path.exists(path):
         raise ValidationError("", reason="Supplied path does not exist!")
