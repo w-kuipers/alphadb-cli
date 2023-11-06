@@ -16,7 +16,7 @@
 from src.utils.common import print_title
 from src.utils.connect.mysql import get_mysql_creds
 from src.utils.connect.sqlite import get_sqlite_file
-from alphadb import AlphaDBMySQL
+from alphadb import AlphaDBMySQL, AlphaDBSQLite
 from alphadb.utils.exceptions import DBTemplateNoMatch, IncompleteVersionData, MissingVersionData, DBConfigIncomplete
 from mysql.connector import DatabaseError, InterfaceError
 from cryptography.fernet import Fernet
@@ -28,9 +28,7 @@ from inquirer import List, prompt, Confirm
 from requests import get
 from requests.exceptions import ConnectionError, JSONDecodeError
 import json
-
-#### Initialize AlphaDB
-db = AlphaDBMySQL()
+from src.utils import globals
 
 "Connect to a database"
 def connect():
@@ -51,10 +49,12 @@ def connect():
     engine = answers["engine"]
 
     if engine == "MySQL":
+        
+        globals.db = AlphaDBMySQL()
         creds = get_mysql_creds()
 
         try:
-            db.connect(
+            globals.db.connect(
                 host=creds["host"],
                 user=creds["user"],
                 password=creds["password"],
@@ -76,6 +76,7 @@ def connect():
         #### Save credentials to config
         config_write({
             "DB_SESSION": {
+                "engine": "mysql",
                 "host": creds["host"],
                 "user": creds["user"],
                 "password": pass_encrypted,
@@ -87,22 +88,36 @@ def connect():
         console.print(f'\n[green]Successfully connected to database:[/green] [cyan]"{creds["database"]}"[/cyan]\n')
 
     elif engine == "SQLite":
+        
+        globals.db = AlphaDBSQLite()
+
         db_file = get_sqlite_file()
 
         #### If db_file is None, user likely aborted
         if db_file == None: return
+        
+        #### Make db connection
+        globals.db.connect(db_file)
 
-        print(db_file)
+        #### Save connection to config
+        config_write({
+            "DB_SESSION": {
+                "engine": "sqlite",
+                "path": db_file,
+            }
+        })
+
+        console.print(f'\n[green]Successfully connected to database at:[/green] [cyan]{db_file}[/cyan]\n')
 
     return
 
 "Initialize database"
-@connection_check(db)
+@connection_check()
 def init():
     
     #### Initialize loader
     with console.status("[cyan]Getting the database ready[/cyan]", spinner="bouncingBall") as _:
-        init = db.init()
+        init = globals.db.init()
 
     if init == "already-initialized":
         console.print("[yellow]The database is already initialized[/yellow]\n")
@@ -113,12 +128,12 @@ def init():
         return
 
 "Get database status"
-@connection_check(db)
+@connection_check()
 def status():
 
     print_title("database status")
 
-    check = db.status()
+    check = globals.db.status()
 
     print(f'Database: {check["name"]}')
     print(f'Template: {check["template"]}')
@@ -131,7 +146,7 @@ def status():
     return
 
 "Update database"
-@connection_check(db)
+@connection_check()
 def update(nodata=False):
 
     print_title("update")
@@ -140,7 +155,7 @@ def update(nodata=False):
     with console.status("[cyan]Checking database[/cyan]", spinner="bouncingBall") as loader:
 
         #### Check database status
-        status = db.status()
+        status = globals.db.status()
         if status["init"] == False:
             console.print(f"[yellow]Database [cyan]{status['name']}[/cyan] has not yet been initialized[/yellow]\n")
             return
@@ -206,7 +221,7 @@ def update(nodata=False):
 
             loader.update("[cyan]Running updates on the database[/cyan]")
 
-            update = db.update(version_source=version_information, no_data=nodata)
+            update = globals.db.update(version_source=version_information, no_data=nodata)
 
             if update:
                 if update == "up-to-date":
@@ -221,7 +236,7 @@ def update(nodata=False):
         console.print(f"[red]{e}[/red]\n")
 
 "Empty database"
-@connection_check(db)
+@connection_check()
 def vacate(confirm=False):
     print_title("vacate")
     
@@ -245,7 +260,7 @@ def vacate(confirm=False):
         with console.status("[cyan]Removing all data from database[/cyan]", spinner="bouncingBall") as _:
 
             #### Empty db
-            if db.vacate(confirm=confirm):
+            if globals.db.vacate(confirm=confirm):
                 console.print("[green]The database had successfully been emptied.[/green]\n")
     else:
         console.print("[cyan]Not empying[/cyan]\n")

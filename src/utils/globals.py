@@ -16,6 +16,11 @@
 from sys import platform
 import os
 from pathlib import Path
+from src.utils.types import AlphaDBMock
+
+global CONFIG_PATH
+global db
+db = AlphaDBMock()
 
 if platform == "linux" or platform == "linux2":
     config_dir = os.path.join(str(Path.home()), ".config/alphadb/")

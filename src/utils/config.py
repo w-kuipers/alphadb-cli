@@ -15,7 +15,7 @@
 
 from configparser import ConfigParser, SectionProxy
 from src.utils.exceptions import ConfigIncoplete
-from src.utils.constants import CONFIG_PATH
+from src.utils.globals import CONFIG_PATH
 from typing import overload, Literal
 
 config = ConfigParser()
