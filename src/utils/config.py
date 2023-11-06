@@ -62,6 +62,20 @@ def config_write(data: dict | list) -> None:
 
     return
 
+"Remove from config file"
+def config_remove(section: str, key: str | None = None):
+
+    if key == None:
+        config.remove_section(section)
+    else:
+        config.remove_option(section, key)
+
+    #### Write changes to config file
+    with open(CONFIG_PATH, 'w') as configfile:
+        config.write(configfile)
+
+    return
+
 "Get all keys of available items in config section"
 def config_get_items(key: str) -> list:
 
