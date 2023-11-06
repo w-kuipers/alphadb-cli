@@ -15,15 +15,15 @@ from src import __app_name__, __version__, commands
 
 app = typer.Typer()
 
-@app.command(help="Initialize the active database")
+@app.command(help="Initialize the currently active database")
 def init() -> None:
     commands.init()
 
-@app.command()
+@app.command(help="Show to status of the currently active database")
 def status() -> None:
     commands.status()
 
-@app.command()
+@app.command(help="Update the database (requires a version source)")
 def update(
     nodata: Optional[bool] = typer.Option(
         False,
@@ -33,7 +33,7 @@ def update(
 ) -> None:
     commands.update(nodata=nodata if not nodata == None else False)
 
-@app.command(help="Deletes all data in the database")
+@app.command(help="Irriversibally deletes ALL data in the database")
 def vacate(
     confirm: Optional[bool] = typer.Option(
         None,
