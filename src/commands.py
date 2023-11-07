@@ -236,18 +236,22 @@ def verify_version_source():
     output = verification.verify()
 
     if output == True:
-        console.print("[green]Version source verified without errors[/green]\n")
+        console.print(f"[green]Version source at [blue]{version_source_path}[/blue] verified without errors[/green]\n")
         return
 
     console.print(f"Version source at [blue]{version_source_path}[/blue] has [red]{len(output)} errors[/red]\n\n")
 
     for issue in output:
+        
+        issue_path, issue_text = issue[1].rsplit(': ', 1)
+
         if issue[0] == "LOW":
-            console.print("LOW VULNERABILITY: ", issue[1], "\n")
+            console.print("[black on white]LOW VULNERABILITY: [/black on white]", f"[cyan]{issue_path}[/cyan]", issue_text)
 
         if issue[0] == "NORMAL":
-            console.print("[yellow]MEDIUM VULNERABILITY: ", issue[1], "[/yellow]\n")
+            console.print("[white on yellow]MEDIUM VULNERABILITY: [/white on yellow][yellow]", f"[cyan]{issue_path}[/cyan]", issue_text, "[/yellow]")
 
         if issue[0] == "CRITICAL":
-            console.print("[white on red]CRITICAL[/white on red]: ", f"[red]{issue[1]}[/red]\n")
-
+            console.print("[white on red]CRITICAL: [/white on red]", f"[cyan]{issue_path}[/cyan]", f"[red]{issue_text}[/red]")
+        
+    console.line()
