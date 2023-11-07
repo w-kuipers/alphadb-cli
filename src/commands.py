@@ -224,7 +224,8 @@ def verify_version_source():
     version_source_path = select_version_source()
 
     #### If version source path is None, user likely aborted
-    
+    if version_source_path == None: return
+
     version_source = vs_path_to_json(version_source_path)
 
     #### If version source is None, an error likely occured and we should not proceed
@@ -232,5 +233,21 @@ def verify_version_source():
 
     verification = VersionSourceVerification(version_source)
 
-    print(verification.verify())
+    output = verification.verify()
+
+    if output == True:
+        console.print("[green]Version source verified without errors[/green]\n")
+        return
+
+    console.print(f"Version source at [blue]{version_source_path}[/blue] has [red]{len(output)} errors[/red]\n\n")
+
+    for issue in output:
+        if issue[0] == "LOW":
+            console.print("LOW VULNERABILITY: ", issue[1], "\n")
+
+        if issue[0] == "NORMAL":
+            console.print("[yellow]MEDIUM VULNERABILITY: ", issue[1], "[/yellow]\n")
+
+        if issue[0] == "CRITICAL":
+            console.print("[white on red]CRITICAL[/white on red]: ", f"[red]{issue[1]}[/red]\n")
 
