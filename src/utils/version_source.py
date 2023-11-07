@@ -139,7 +139,7 @@ def vs_path_to_json(path) -> dict | None:
             console.print("[red]Unable to establish connection[/red]\n")
             return
 
-        except JSONDecodeError as e:
+        except JSONDecodeError:
             console.print("[red]The supplied URL did not respond with compatible data[/red]\n")
             return
     else:
