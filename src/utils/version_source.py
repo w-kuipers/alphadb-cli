@@ -39,7 +39,7 @@ def select_version_source() -> str | None:
 
         choices = [f"{i[0]} ({'web' if i[1][0:4] == 'http' else 'file'})" for i in version_sources]
         choices.append("+ New version source")
-        questions = [List("version_source", message=f"Fount {len(version_sources)} version sources, which one do you wish to use?", choices=choices)]
+        questions = [List("version_source", message=f"Found {len(version_sources)} version sources, which one do you wish to use?", choices=choices)]
 
         answers = prompt(questions)
 
