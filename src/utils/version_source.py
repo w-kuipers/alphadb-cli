@@ -15,15 +15,52 @@
 
 import os
 import json
-from src.utils.config import config_get, config_write
+from src.utils.config import config_get, config_write, config_get_items
 from requests import get
 from requests.exceptions import JSONDecodeError, ConnectionError
-from inquirer import Text, prompt
+from inquirer import Text, prompt, List
 from inquirer.errors import ValidationError
-from src.utils.common import console
+from src.utils.common import console, clear
 
-"Adding a new version source to config"
+def select_version_source() -> str | None:
+    "Get version sources from config and promt user to select one"
+    #### Check for version sources
+    version_sources = config_get_items("VERSION_SOURCES")
+    version_source_path = None
+
+    #### If no versions sources exist, ask to create one
+    if len(version_sources) == 0:
+        console.print("[cyan]You have no saved version sources, so let's find one.[/cyan]\n")
+        version_source_path = add_version_source()
+        print("\n")
+     
+    #### Ask user to select version source
+    if version_source_path == None:
+
+        choices = [f"{i[0]} ({'web' if i[1][0:4] == 'http' else 'file'})" for i in version_sources]
+        choices.append("+ New version source")
+        questions = [List("version_source", message=f"Fount {len(version_sources)} version sources, which one do you wish to use?", choices=choices)]
+
+        answers = prompt(questions)
+
+        #### If answers is None, user probably aborted
+        if answers == None: return
+
+        version_source = answers["version_source"]
+
+        clear()
+
+        if version_source == "+ New version source":
+            version_source_path = add_version_source()
+        else:
+            version_source_path = config_get("VERSION_SOURCES")[version_source.split(" ")[0]]
+
+        return version_source_path
+
+
 def add_version_source() -> str | None:
+    "Adding a new version source to config"
+
     ## ! Do not allow spaces
     print("Version sources can either be local JSON files or URL's returning JSON data.\n")
     
@@ -83,3 +120,28 @@ def add_version_source() -> str | None:
     config_write({"VERSION_SOURCES": vs})
 
     return path
+
+def vs_path_to_json(path) -> dict | None:
+    
+    #### Get version invormation from path
+    if path[0:4] == "http":
+        try:
+            r = get(path)
+            if not r.status_code == 200:
+                console.print(f"[red]No version information was returned from the server, it instead responded with status {r.status_code}[/red]\n")
+                return
+
+
+            return r.json()
+
+        #### TODO This connection error catch does not seem to work  
+        except ConnectionError:
+            console.print("[red]Unable to establish connection[/red]\n")
+            return
+
+        except JSONDecodeError as e:
+            console.print("[red]The supplied URL did not respond with compatible data[/red]\n")
+            return
+    else:
+        with open(path) as version_json:
+            return json.load(version_json)

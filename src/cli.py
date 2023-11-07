@@ -47,6 +47,10 @@ def vacate(
 def connect() -> None:
     commands.connect()
 
+@app.command("verify", help="Verify version source")
+def verify_version_source() -> None:
+    commands.verify_version_source()
+
 def version_callback(value: bool) -> None:
     if value:
         typer.echo(f"{__app_name__} v{__version__}")
