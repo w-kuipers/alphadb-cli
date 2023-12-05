@@ -22,7 +22,7 @@ global CONFIG_PATH
 global db
 db = AlphaDBMock()
 
-if platform == "linux" or platform == "linux2":
+if platform == "linux" or platform == "linux2" or platform == "darwin":
     config_dir = os.path.join(str(Path.home()), ".config/alphadb/")
     if not os.path.exists(config_dir): os.mkdir(config_dir)
     CONFIG_PATH = os.path.join(config_dir, "cli-config.ini")
