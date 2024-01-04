@@ -19,14 +19,11 @@ from alphadb import AlphaDB
 from alphadb.utils.exceptions import DBTemplateNoMatch, IncompleteVersionData, MissingVersionData, DBConfigIncomplete
 from mysql.connector import DatabaseError, InterfaceError
 from cryptography.fernet import Fernet
-from src.utils.config import config_get, config_write, config_get_items
+from src.utils.config import config_get, config_write 
 from src.utils.common import console, clear
 from src.utils.decorators import connection_check
-from src.utils.version_source import add_version_source
+from src.utils.version_source import select_version_source, vs_path_to_json
 from inquirer import List, prompt, Confirm
-from requests import get
-from requests.exceptions import ConnectionError, JSONDecodeError
-import json
 from src.utils import globals
 
 def connect():
@@ -118,64 +115,19 @@ def update(nodata=False):
             console.print(f"[yellow]Database [cyan]{status['name']}[/cyan] has not yet been initialized[/yellow]\n")
             return
 
-    #### Check for version sources
-    version_sources = config_get_items("VERSION_SOURCES")
-    version_source_path = None
-
-    #### If no versions sources exist, ask to create one
-    if len(version_sources) == 0:
-        console.print("[cyan]You have no saved version sources, so let's find one.[/cyan]\n")
-        version_source_path = add_version_source()
-        print("\n")
     try:
-        #### Ask user to select version source
-        if version_source_path == None:
 
-            choices = [f"{i[0]} ({'web' if i[1][0:4] == 'http' else 'file'})" for i in version_sources]
-            choices.append("+ New version source")
-            questions = [List("version_source", message=f"Fount {len(version_sources)} version sources, which one do you wish to use?", choices=choices)]
-
-            answers = prompt(questions)
-
-            #### If answers is None, user probably aborted
-            if answers == None: return
-
-            version_source = answers["version_source"]
-
-            clear()
-
-            if version_source == "+ New version source":
-                version_source_path = add_version_source()
-            else:
-                version_source_path = config_get("VERSION_SOURCES")[version_source.split(" ")[0]]
+        version_source_path = select_version_source()
     
         #### If source path is None, user probably aborted
         if version_source_path == None: return
         
         with console.status("[cyan]Reading version source[/cyan]", spinner="bouncingBall") as loader:
+           
+            version_information = vs_path_to_json(version_source_path)
 
-            #### Get version invormation from path
-            if version_source_path[0:4] == "http":
-                try:
-                    r = get(version_source_path)
-                    if not r.status_code == 200:
-                        console.print(f"[red]No version information was returned from the server, it instead responded with status {r.status_code}[/red]\n")
-                        return
-
-
-                    version_information = r.json()
-
-               #### TODO This connection error catch does not seem to work  
-                except ConnectionError:
-                    console.print("[red]Unable to establish connection[/red]\n")
-                    return
-
-                except JSONDecodeError as e:
-                    console.print("[red]The supplied URL did not respond with compatible data[/red]\n")
-                    return
-            else:
-                with open(version_source_path) as version_json:
-                    version_information = json.load(version_json)
+            #### If version information is None, an error has likely occured and we should not proceed
+            if version_information == None: return
 
             loader.update("[cyan]Running updates on the database[/cyan]")
 
@@ -223,3 +175,41 @@ def vacate(confirm=False):
     else:
         console.print("[cyan]Not empying[/cyan]\n")
     return
+
+def verify_version_source():
+    print_title("verify version source")
+    
+    version_source_path = select_version_source()
+
+    #### If version source path is None, user likely aborted
+    if version_source_path == None: return
+
+    version_source = vs_path_to_json(version_source_path)
+
+    #### If version source is None, an error likely occured and we should not proceed
+    if version_source == None: return
+
+    verification = VersionSourceVerification(version_source)
+
+    output = verification.verify()
+
+    if output == True:
+        console.print(f"[green]Version source at [blue]{version_source_path}[/blue] verified without errors[/green]\n")
+        return
+
+    console.print(f"Version source at [blue]{version_source_path}[/blue] has [red]{len(output)} errors[/red]\n\n")
+
+    for issue in output:
+        
+        issue_path, issue_text = issue[1].rsplit(': ', 1)
+
+        if issue[0] == "LOW":
+            console.print("[black on white]LOW VULNERABILITY: [/black on white]", f"[cyan]{issue_path}[/cyan]", issue_text)
+
+        if issue[0] == "NORMAL":
+            console.print("[white on yellow]MEDIUM VULNERABILITY: [/white on yellow][yellow]", f"[cyan]{issue_path}[/cyan]", issue_text, "[/yellow]")
+
+        if issue[0] == "CRITICAL":
+            console.print("[white on red]CRITICAL: [/white on red]", f"[cyan]{issue_path}[/cyan]", f"[red]{issue_text}[/red]")
+        
+    console.line()
