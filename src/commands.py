@@ -15,15 +15,15 @@
 
 from src.utils.common import print_title
 from src.utils.connect import get_mysql_creds
-from alphadb import AlphaDB
+from alphadb import AlphaDB, VersionSourceVerification
 from alphadb.utils.exceptions import DBTemplateNoMatch, IncompleteVersionData, MissingVersionData, DBConfigIncomplete
 from mysql.connector import DatabaseError, InterfaceError
 from cryptography.fernet import Fernet
 from src.utils.config import config_get, config_write 
-from src.utils.common import console, clear
+from src.utils.common import console
 from src.utils.decorators import connection_check
 from src.utils.version_source import select_version_source, vs_path_to_json
-from inquirer import List, prompt, Confirm
+from inquirer import prompt, Confirm
 from src.utils import globals
 
 def connect():
@@ -199,15 +199,20 @@ def verify_version_source():
 
     console.print(f"Version source at [blue]{version_source_path}[/blue] has [red]{len(output)} errors[/red]\n\n")
 
-    for issue in output:
-        
-        issue_path, issue_text = issue[1].rsplit(': ', 1)
+    for issue in sorted(output):
+            
+
+        if ":" in issue[1]:
+            issue_path, issue_text = issue[1].rsplit(': ', 1)
+        else:
+            issue_path = ""
+            issue_text = issue[1]
 
         if issue[0] == "LOW":
             console.print("[black on white]LOW VULNERABILITY: [/black on white]", f"[cyan]{issue_path}[/cyan]", issue_text)
 
-        if issue[0] == "NORMAL":
-            console.print("[white on yellow]MEDIUM VULNERABILITY: [/white on yellow][yellow]", f"[cyan]{issue_path}[/cyan]", issue_text, "[/yellow]")
+        if issue[0] == "HIGH":
+            console.print("[white on yellow]HIGH VULNERABILITY: [/white on yellow]", f"[cyan]{issue_path}[/cyan]", f"[yellow]{issue_text}[/yellow]")
 
         if issue[0] == "CRITICAL":
             console.print("[white on red]CRITICAL: [/white on red]", f"[cyan]{issue_path}[/cyan]", f"[red]{issue_text}[/red]")

@@ -14,17 +14,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import json
+import os
 
 from src.utils.config import config_get, config_write, config_get_items
 from requests import get
 from requests.exceptions import JSONDecodeError, ConnectionError
-from inquirer import Text, prompt, List
+from inquirer import Text, prompt, List, Path
 from inquirer.errors import ValidationError
 from src.utils.common import console, clear
 
 def select_version_source() -> str | None:
     "Get version sources from config and promt user to select one"
-    #### Check for version sources
     version_sources = config_get_items("VERSION_SOURCES")
     version_source_path = None
 
@@ -85,7 +85,7 @@ def add_version_source() -> str | None:
             return True
 
         questions = [
-            Text(
+            Path(
                 "path",
                 message="Please provide either an absolute local file path or a local/remote URL",
                 validate=lambda _, x: pathval(x),

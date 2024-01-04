@@ -1,8 +1,6 @@
 {
-	"name": "test",
 	"version": [
 		{
-			"_id": "0.0.1",
 			"createtable": {
 				"table1": {
 					"primary_key": "col1",
@@ -30,7 +28,8 @@
 					"primary_key": "col1",
 					"col1": {
 						"type": "INT",
-						"a_i": true
+						"a_i": true,
+						"null": true
 					},
 					"col2": {
 						"type": "VARCHAR",
@@ -39,6 +38,11 @@
 					}
 				}
 			}
+		},
+		{
+			"_id": "0.0.3", 
+			"createtable": {},
+			"altertable": {}
 		},
 		{
 			"_id": "0.1.0",
@@ -78,7 +82,7 @@
 			}
 		},
 		{
-			"_id": "0.2.1",
+			"_id": "0.29j1",
 			"altertable": {
 				"table2": {
 					"renamecolumn": {
@@ -103,7 +107,7 @@
 		},
 		{
 			"_id": "0.2.3",
-			"altertable": {
+			"altertablle": {
 				"table2": {
 					"renamecolumn": {
 						"wasoriginalycol1": "secondrenameoncol1"
@@ -112,12 +116,12 @@
 			}
 		},
 		{
-			"_id": "0.2.4",
 			"altertable": {
 				"table2": {
 					"modifycolumn": {
 						"secondrenameoncol1": {
 							"recreate": false,
+							"a_i": true,
 							"null": true
 						},
 						"col2": {
