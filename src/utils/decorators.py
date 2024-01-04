@@ -13,18 +13,22 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from configparser import ConfigParser
 import os
+from configparser import ConfigParser
+from typing import Callable
+
+from alphadb import AlphaDB
+from cryptography.fernet import Fernet
+from simpleUID import urlsafe
+
 from src.utils import globals
 from src.utils.common import console
-from typing import Callable
-from alphadb import AlphaDBSQLite, AlphaDBMySQL
-from simpleUID import urlsafe
-from cryptography.fernet import Fernet
 from src.utils.config import config_get, config_remove
 
-#### Decorator function to init config when its not initialized yet
+
 def config_check(func: Callable) -> Callable:
+    "Initialize config when it's not yet initialized"
+
     def _(*args, **kwargs):
         config = ConfigParser()
         if os.path.isfile(globals.CONFIG_PATH):
@@ -43,54 +47,41 @@ def config_check(func: Callable) -> Callable:
     return _
 
 
-#### Check for database connecten, used for local db connection
 def connection_check() -> Callable:
+    "Check if a database connection exists"
+
     def _(func: Callable) -> Callable:
         def _wrapper(*args, **kwargs):
             if globals.db.connection == None:
-
-                #### Check if a connection is saved
                 conn = config_get("DB_SESSION", fallback=True)
                 main_config = config_get("CONFIG")
                 secret = main_config["secret"] if "secret" in main_config else None
-                    
+
                 if conn and secret:
+                    globals.db = AlphaDB()
 
-                    #### If engine is not saved, remove session
-                    if not "engine" in conn:
-                        console.print("[red]Unable to authorize using saved credentials. Please reconnect to the database.[/red]")
-                        config_remove("DB_SESSION")
+                    try:
+                        globals.db.connect(
+                            host=conn["host"],
+                            user=conn["user"],
+                            password=Fernet(secret)
+                            .decrypt(conn["password"][1:-1])
+                            .decode(),  ## Decrypt
+                            database=conn["database"],
+                            port=conn["port"],
+                        )
+
+                        globals.db.connection.autocommit = True
+                    except:
+                        console.print(
+                            "[red]Unable to authorize using saved credentials. Please reconnect to the database.[/red]"
+                        )
                         return
-
-                    engine = conn["engine"]
-                    
-                    if engine == "mysql":
-                        globals.db = AlphaDBMySQL()
-
-                        try:
-                            globals.db.connect(
-                                host=conn["host"],
-                                user=conn["user"],
-                                password=Fernet(secret).decrypt(conn["password"][1:-1]).decode(),  ## Decrypt
-                                database=conn["database"],
-                                port=conn["port"],
-                            )
-
-                            globals.db.connection.autocommit = True
-                        except:
-                            console.print("[red]Unable to authorize using saved credentials. Please reconnect to the database.[/red]")
-                            return
-
-                    if engine == "sqlite":
-                        globals.db = AlphaDBSQLite()
-
-                        try:
-                            globals.db.connect(conn["path"])
-                        except:
-                            console.print(f"[red]Unable to connect to database at [white]{conn['path']}[/white][/red]")
 
                     return func(*args, **kwargs)
 
                 console.print("\n[yellow]No database connection found.[/yellow]\n")
+
         return _wrapper
+
     return _

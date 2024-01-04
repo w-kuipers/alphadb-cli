@@ -17,7 +17,6 @@ from src import __app_name__, cli
 from src.utils.decorators import config_check
 from src.utils.common import console, clear
 
-#### Initialize some stuff
 DEV = True
 
 def raise_error(e):

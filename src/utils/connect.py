@@ -13,12 +13,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import inquirer
-from typing import TypedDict
 import sys
+from typing import TypedDict
+
+import inquirer
+
 from src.utils.common import console
 
-#### Type hinting
+
 class MySQLCredentials(TypedDict):
     host: str
     user: str
@@ -26,17 +28,21 @@ class MySQLCredentials(TypedDict):
     database: str
     port: int
 
-"Check if port is type int by converting it to one"
+
 def check_port(val):
+    "Check if port is a number"
     try:
         int(val if val else 3306)
     except ValueError:
         return False
     return True
 
-"Prompt user to input credentials"
+
 def get_mysql_creds() -> MySQLCredentials:
-    console.print("[cyan]Connecting to a MySQL database requires you to provide log-in credentials[/cyan]\n")
+    "Prompt user to input credentials"
+    console.print(
+        "[cyan]Connecting to a MySQL database requires you to provide log-in credentials[/cyan]\n"
+    )
     console.print("[cyan]Host:[/cyan]", "URL/IP (Default localhost)")
     console.print("[cyan]User:[/cyan]", "User with permissions to alter the database")
     console.print("[cyan]Password:[/cyan]", "The users password")
@@ -45,22 +51,24 @@ def get_mysql_creds() -> MySQLCredentials:
 
     questions = [
         inquirer.Text("host", message="Host (localhost)"),
-        inquirer.Text("user", message='User'),
+        inquirer.Text("user", message="User"),
         inquirer.Password("password", message="Password"),
         inquirer.Text("database", message="Database"),
-        inquirer.Text("port", message="Port (3306)", validate=lambda _, x: check_port(x))
+        inquirer.Text(
+            "port", message="Port (3306)", validate=lambda _, x: check_port(x)
+        ),
     ]
-    
+
     answers = inquirer.prompt(questions)
 
     #### If answers is None, user probably aborted
-    if answers == None: sys.exit() ## Exit because returning raises error as there is no credentials returned
+    if answers == None:
+        sys.exit()  ## Exit because returning raises error as there is no credentials returned
 
-    #### Convert to defaults if needed and return
     return {
         "host": answers["host"] if not answers["host"] == "" else "localhost",
         "user": answers["user"],
         "password": answers["password"],
         "database": answers["database"],
-        "port": int(answers["port"]) if not answers["port"] == "" else 3306
+        "port": int(answers["port"]) if not answers["port"] == "" else 3306,
     }

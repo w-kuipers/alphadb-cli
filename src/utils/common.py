@@ -33,9 +33,4 @@ def clear():
 
     db_session_data = config_get("DB_SESSION", fallback=True)
     if not db_session_data == None:
-        
-        if db_session_data["engine"] == "mysql":
-            console.print(f'[cyan]Connected to [blue]MySQL[/blue] database[/cyan] {db_session_data["database"]} [cyan]on[/cyan] {db_session_data["host"]}\n')
-
-        if db_session_data["engine"] == "sqlite":
-            console.print(f"[cyan]Connected to [blue]SQLite[/blue] database at [white]{db_session_data['path']}[/white][/cyan]\n")
+        console.print(f'[cyan]Connected to database[/cyan] {db_session_data["database"]} [cyan]on[/cyan] {db_session_data["host"]}\n')

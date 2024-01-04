@@ -14,9 +14,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from src.utils.common import print_title
-from src.utils.connect.mysql import get_mysql_creds
-from src.utils.connect.sqlite import get_sqlite_file
-from alphadb import AlphaDBMySQL, AlphaDBSQLite, VersionSourceVerification
+from src.utils.connect import get_mysql_creds
+from alphadb import AlphaDB
 from alphadb.utils.exceptions import DBTemplateNoMatch, IncompleteVersionData, MissingVersionData, DBConfigIncomplete
 from mysql.connector import DatabaseError, InterfaceError
 from cryptography.fernet import Fernet
@@ -27,90 +26,50 @@ from src.utils.version_source import select_version_source, vs_path_to_json
 from inquirer import List, prompt, Confirm
 from src.utils import globals
 
-"Connect to a database"
 def connect():
+    "Connect to a database"
 
     print_title("connect")
-    
-    #### Prompt user for database engine
-    questions = [List("engine", choices=["MySQL", "SQLite"])]
-    answers = prompt(questions)
-    
-    #### If answers is None, user likely aborted
-    if answers == None: return
-
-    #### clear terminal and rerender title
-    clear()
-    print_title("connect")
-
-    engine = answers["engine"]
-
-    if engine == "MySQL":
         
-        globals.db = AlphaDBMySQL()
-        creds = get_mysql_creds()
+    globals.db = AlphaDB()
+    creds = get_mysql_creds()
 
-        try:
-            globals.db.connect(
-                host=creds["host"],
-                user=creds["user"],
-                password=creds["password"],
-                database=creds["database"],
-                port=creds["port"],
-            )
+    try:
+        globals.db.connect(
+            host=creds["host"],
+            user=creds["user"],
+            password=creds["password"],
+            database=creds["database"],
+            port=creds["port"],
+        )
 
-        #### Print mysql error if raised
-        except (DatabaseError, InterfaceError) as e:
-            if hasattr(e, "msg"): console.print(f"\n[red]{e.msg}[/red]\n")
-            else: console.print(f"\n[red]{e}[/red]\n")
-            return
+    except (DatabaseError, InterfaceError) as e:
+        if hasattr(e, "msg"): console.print(f"\n[red]{e.msg}[/red]\n")
+        else: console.print(f"\n[red]{e}[/red]\n")
+        return
 
-        ### If connection was successful, add the credentials to config
-        pass_bytes = creds["password"].encode()
-        f = Fernet(config_get("CONFIG", "secret"))
-        pass_encrypted = f.encrypt(pass_bytes)
+    pass_bytes = creds["password"].encode()
+    f = Fernet(config_get("CONFIG", "secret"))
+    pass_encrypted = f.encrypt(pass_bytes)
 
-        #### Save credentials to config
-        config_write({
-            "DB_SESSION": {
-                "engine": "mysql",
-                "host": creds["host"],
-                "user": creds["user"],
-                "password": pass_encrypted,
-                "database": creds["database"],
-                "port": creds["port"],
-            }
-        })
+    config_write({
+        "DB_SESSION": {
+            "host": creds["host"],
+            "user": creds["user"],
+            "password": pass_encrypted,
+            "database": creds["database"],
+            "port": creds["port"],
+        }
+    })
 
-        console.print(f'\n[green]Successfully connected to database:[/green] [cyan]"{creds["database"]}"[/cyan]\n')
+    console.print(f'\n[green]Successfully connected to database:[/green] [cyan]"{creds["database"]}"[/cyan]\n')
 
-    elif engine == "SQLite":
-        
-        globals.db = AlphaDBSQLite()
-
-        db_file = get_sqlite_file()
-
-        #### If db_file is None, user likely aborted
-        if db_file == None: return
-        
-        #### Make db connection
-        globals.db.connect(db_file)
-
-        #### Save connection to config
-        config_write({
-            "DB_SESSION": {
-                "engine": "sqlite",
-                "path": db_file,
-            }
-        })
-
-        console.print(f'\n[green]Successfully connected to database at:[/green] [cyan]{db_file}[/cyan]\n')
 
     return
 
-"Initialize database"
 @connection_check()
 def init():
+    "Initialize database"
     
     #### Initialize loader
     with console.status("[cyan]Getting the database ready[/cyan]", spinner="bouncingBall") as _:
@@ -124,10 +83,9 @@ def init():
         console.print("[green]Database successfully initialized[/green]\n")
         return
 
-"Get database status"
 @connection_check()
 def status():
-
+    "Get database status"
     print_title("database status")
 
     check = globals.db.status()
@@ -142,9 +100,9 @@ def status():
 
     return
 
-"Update database"
 @connection_check()
 def update(nodata=False):
+    "Update database"
 
     print_title("update")
 
@@ -187,9 +145,9 @@ def update(nodata=False):
     except (DBTemplateNoMatch, IncompleteVersionData, MissingVersionData, DBConfigIncomplete) as e:
         console.print(f"[red]{e}[/red]\n")
 
-"Empty database"
 @connection_check()
 def vacate(confirm=False):
+    "Empty database"
     print_title("vacate")
     
     #### Only works when confirm==True is specified
